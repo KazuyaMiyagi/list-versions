@@ -1,0 +1,4 @@
+# Normalize line endings to LF on checkout so gofmt stays consistent across
+# platforms. Without this, the Windows CI runner (core.autocrlf=true) checks
+# files out with CRLF and `gofmt -l .` flags every Go file.
+* text=auto eol=lf
