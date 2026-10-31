@@ -123,7 +123,7 @@ list-versions --exclude .venv,tmp
 
 | Ecosystem | Manifest                                                        | Lockfile                                                    |
 | --------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Ruby      | `Gemfile`                                                       | `Gemfile.lock`                                              |
+| Ruby      | `Gemfile`/`*.gemspec`                                           | `Gemfile.lock`                                              |
 | npm       | `package.json` (deps, devDeps)                                  | `package-lock.json`/`yarn.lock`/`pnpm-lock.yaml`/`bun.lock` |
 | Python    | `pyproject.toml` (PEP 621, Poetry)/`Pipfile`/`requirements.txt` | `poetry.lock`/`Pipfile.lock`/`uv.lock`                      |
 | Rust      | `Cargo.toml`                                                    | `Cargo.lock`                                                |

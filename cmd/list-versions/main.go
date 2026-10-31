@@ -140,6 +140,7 @@ func main() {
 		managers = append(managers,
 			manager.GemfileDeps{},
 			manager.GemfileLockDeps{},
+			manager.GemspecDeps{},
 			manager.PackageJSONDeps{},
 			manager.PackageLockJSON{},
 			manager.YarnLock{},
