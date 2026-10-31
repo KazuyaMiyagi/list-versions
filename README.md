@@ -63,6 +63,10 @@ list-versions --exclude .venv,tmp
 - `required_ruby_version` and `required_rubygems_version` (RubyGems)
   in `*.gemspec`
 - `requires-python`/Poetry's `python` in `pyproject.toml`
+- `[tool.poetry] requires-poetry` and `[tool.uv] required-version`
+  in `pyproject.toml`
+- `required-version` in `uv.toml`
+- the Poetry version in the `@generated` header of `poetry.lock`
 
 ### Containers
 

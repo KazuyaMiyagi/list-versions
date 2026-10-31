@@ -53,6 +53,9 @@ var toolTypeMap = map[string]string{
 	"pnpm":              "pnpm",
 	"yarn":              "Yarn",
 	"npm":               "npm",
+	"poetry":            "Poetry",
+	"uv":                "uv",
+	"pipenv":            "Pipenv",
 	"dotnet":            ".NET",
 }
 

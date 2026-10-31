@@ -130,6 +130,8 @@ func main() {
 		manager.GemfileLock{},
 		manager.Gemspec{},
 		manager.PyprojectToml{},
+		manager.PoetryLockTool{},
+		manager.UvToml{},
 		manager.Dockerfile{},
 		manager.Terraform{},
 		manager.TerraformResources{},
