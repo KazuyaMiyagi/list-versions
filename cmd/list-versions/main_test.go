@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"runtime/debug"
+	"testing"
+)
 
 func TestEmptyOutputMessage(t *testing.T) {
 	cases := []struct {
@@ -71,6 +74,28 @@ func TestParseTypeFilter(t *testing.T) {
 			}
 			if got != c.wantMatch {
 				t.Errorf("filter=%q typ=%q got=%v want=%v", c.filter, c.typ, got, c.wantMatch)
+			}
+		})
+	}
+}
+
+func TestResolveVersion(t *testing.T) {
+	cases := []struct {
+		name    string
+		ldflags string
+		info    *debug.BuildInfo
+		want    string
+	}{
+		{"module version from go install", "dev", &debug.BuildInfo{Main: debug.Module{Version: "v0.2.0"}}, "v0.2.0"},
+		{"ldflags version wins", "v0.2.0", &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}}, "v0.2.0"},
+		{"devel build stays dev", "dev", &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}}, "dev"},
+		{"empty module version stays dev", "dev", &debug.BuildInfo{}, "dev"},
+		{"no build info stays dev", "dev", nil, "dev"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := resolveVersion(c.ldflags, c.info); got != c.want {
+				t.Errorf("got %q, want %q", got, c.want)
 			}
 		})
 	}

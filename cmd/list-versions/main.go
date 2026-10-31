@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"strings"
 
 	"github.com/KazuyaMiyagi/list-versions/internal/entry"
@@ -14,8 +15,9 @@ import (
 	"github.com/KazuyaMiyagi/list-versions/internal/output"
 )
 
-// version is overridden at build time with `-ldflags "-X main.version=vX.Y.Z"`.
-// `dev` is the default for local `go build` invocations.
+// version is overridden at build time with `-ldflags "-X main.version=vX.Y.Z"`
+// (GoReleaser does this). `go install ...@vX.Y.Z` passes no ldflags, so `dev`
+// is replaced by the module version from the build info at print time.
 var version = "dev"
 
 const usage = `Usage: list-versions [OPTIONS] [PATH...]
@@ -95,7 +97,8 @@ func main() {
 	}
 
 	if versionFlag {
-		fmt.Println("list-versions", version)
+		info, _ := debug.ReadBuildInfo()
+		fmt.Println("list-versions", resolveVersion(version, info))
 		return
 	}
 
@@ -280,4 +283,16 @@ func emit(format string, es []entry.Entry, keys []string) error {
 		return output.EntriesJSON(os.Stdout, es, keys)
 	}
 	return fmt.Errorf("unknown format: %s", format)
+}
+
+func resolveVersion(ldflags string, info *debug.BuildInfo) string {
+	if ldflags != "dev" || info == nil {
+		return ldflags
+	}
+	switch v := info.Main.Version; v {
+	case "", "(devel)":
+		return ldflags
+	default:
+		return v
+	}
 }
