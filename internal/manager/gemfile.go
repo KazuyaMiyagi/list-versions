@@ -19,7 +19,7 @@ type Gemfile struct{}
 
 func (Gemfile) Name() string { return "gemfile" }
 
-func (Gemfile) Match(path string) bool { return filepath.Base(path) == "Gemfile" }
+func (Gemfile) Match(path string) bool { return isGemfile(path) }
 
 func (Gemfile) Extract(file File) ([]entry.Entry, error) {
 	data, err := readBytes(file)
@@ -35,9 +35,25 @@ func (Gemfile) Extract(file File) ([]entry.Entry, error) {
 		return []entry.Entry{{
 			Type:    "Ruby",
 			Path:    filepath.Dir(file.Path),
-			Name:    "Gemfile",
+			Name:    filepath.Base(file.Path),
 			Version: m[1],
 		}}, nil
 	}
 	return nil, scanner.Err()
+}
+
+func isGemfile(path string) bool {
+	switch filepath.Base(path) {
+	case "Gemfile", "gems.rb":
+		return true
+	}
+	return false
+}
+
+func isGemfileLock(path string) bool {
+	switch filepath.Base(path) {
+	case "Gemfile.lock", "gems.locked":
+		return true
+	}
+	return false
 }

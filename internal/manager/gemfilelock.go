@@ -15,7 +15,7 @@ type GemfileLock struct{}
 
 func (GemfileLock) Name() string { return "gemfile-lock" }
 
-func (GemfileLock) Match(path string) bool { return filepath.Base(path) == "Gemfile.lock" }
+func (GemfileLock) Match(path string) bool { return isGemfileLock(path) }
 
 func (GemfileLock) Extract(file File) ([]entry.Entry, error) {
 	data, err := readBytes(file)
@@ -37,7 +37,7 @@ func (GemfileLock) Extract(file File) ([]entry.Entry, error) {
 		return []entry.Entry{{
 			Type:    "Bundler",
 			Path:    filepath.Dir(file.Path),
-			Name:    "Gemfile.lock",
+			Name:    filepath.Base(file.Path),
 			Version: version,
 		}}, nil
 	}
