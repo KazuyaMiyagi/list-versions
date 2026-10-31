@@ -60,6 +60,8 @@ list-versions --exclude .venv,tmp
   and `packageManager` (corepack)
 - the `ruby "..."` directive in `Gemfile`
 - `BUNDLED WITH` in `Gemfile.lock` (Bundler)
+- `required_ruby_version` and `required_rubygems_version` (RubyGems)
+  in `*.gemspec`
 - `requires-python`/Poetry's `python` in `pyproject.toml`
 
 ### Containers
@@ -121,7 +123,7 @@ list-versions --exclude .venv,tmp
 
 | Ecosystem | Manifest                                                        | Lockfile                                                    |
 | --------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Ruby      | `Gemfile`                                                       | `Gemfile.lock`                                              |
+| Ruby      | `Gemfile`/`*.gemspec`                                           | `Gemfile.lock`                                              |
 | npm       | `package.json` (deps, devDeps)                                  | `package-lock.json`/`yarn.lock`/`pnpm-lock.yaml`/`bun.lock` |
 | Python    | `pyproject.toml` (PEP 621, Poetry)/`Pipfile`/`requirements.txt` | `poetry.lock`/`Pipfile.lock`/`uv.lock`                      |
 | Rust      | `Cargo.toml`                                                    | `Cargo.lock`                                                |
@@ -161,6 +163,8 @@ With `--sort`, the column order and sort keys move together.
   It can't be analyzed statically.
 - Terraform `Lambda@Edge` detection only works within one module directory.
   Cross-module setups are unsupported.
+- In `*.gemspec`, only string literals on the same line are read.
+  Constants and `#{}` interpolation are skipped.
 
 ## Release
 
