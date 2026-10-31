@@ -125,6 +125,7 @@ func main() {
 		manager.PackageJSON{},
 		manager.Gemfile{},
 		manager.GemfileLock{},
+		manager.Gemspec{},
 		manager.PyprojectToml{},
 		manager.Dockerfile{},
 		manager.Terraform{},
