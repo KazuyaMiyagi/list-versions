@@ -65,8 +65,8 @@ Why preserve root order: the order of arguments passed via shell glob (`list-ver
 Use the official spelling:
 
 - `Python` / `Ruby` / `Node.js` / `Go` / `Java` / `Bun` / `Deno` / `Rust` / `PHP` / `Perl` / `Lua` / `Crystal` / `Elixir` / `Erlang` / `Scala` / `Swift`
-- `Bundler` / `RubyGems` / `Yarn` / `OpenAPI Generator` / `Terraform` / `Helm Chart` / `GitHub Actions`
-- Follow lowercase when that's official: `npm` / `pnpm` / `sbt` / `pip` (the latter as a deps prefix only)
+- `Bundler` / `RubyGems` / `Yarn` / `Poetry` / `Pipenv` / `OpenAPI Generator` / `Terraform` / `Helm Chart` / `GitHub Actions`
+- Follow lowercase when that's official: `npm` / `pnpm` / `sbt` / `uv` / `pip` (the latter as a deps prefix only)
 
 ### Managed services
 

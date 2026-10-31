@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"testing"
 
@@ -156,6 +157,22 @@ weird-tool 1.0
 		if got[k] != v {
 			t.Errorf("%s: want %q, got %q", k, v, got[k])
 		}
+	}
+}
+
+func TestToolVersions_PythonPackageManagers(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".tool-versions"), `poetry 2.1.3
+uv 0.7.2
+pipenv 2025.0.3
+`)
+	got := map[string]string{}
+	for _, e := range collect(t, ToolVersions{}, dir) {
+		got[e.Type] = e.Version
+	}
+	want := map[string]string{"Poetry": "2.1.3", "uv": "0.7.2", "Pipenv": "2025.0.3"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
 
