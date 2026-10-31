@@ -17,6 +17,7 @@ func TestGemspec(t *testing.T) {
 		{"single quotes", `  spec.required_ruby_version = '>= 2.7'`, []tv{{"Ruby", ">= 2.7"}}},
 		{"array of requirements", `  s.required_ruby_version = [">= 3.0", "< 4"]`, []tv{{"Ruby", ">= 3.0, < 4"}}},
 		{"Gem::Requirement", `  s.required_ruby_version = Gem::Requirement.new(">= 2.7.0".freeze)`, []tv{{"Ruby", ">= 2.7.0"}}},
+		{"array on continuation lines", "spec.required_ruby_version = [\n  \">= 3.0\",\n  \"< 4\"\n]", []tv{{"Ruby", ">= 3.0, < 4"}}},
 		{"rubygems requirement", `  spec.required_rubygems_version = ">= 3.3.0"`, []tv{{"RubyGems", ">= 3.3.0"}}},
 		{"ruby and rubygems", "spec.required_ruby_version = \">= 3.1\"\nspec.required_rubygems_version = \">= 3.3.0\"", []tv{{"Ruby", ">= 3.1"}, {"RubyGems", ">= 3.3.0"}}},
 		{"rubygems >= 0 skipped", `  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=`, nil},

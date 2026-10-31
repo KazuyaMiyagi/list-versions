@@ -1,8 +1,6 @@
 package manager
 
 import (
-	"bufio"
-	"bytes"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -31,9 +29,12 @@ func (GemspecDeps) Extract(file File) ([]entry.Entry, error) {
 	}
 	dir := filepath.Dir(file.Path)
 	var entries []entry.Entry
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	for scanner.Scan() {
-		m := gemspecDepRe.FindStringSubmatch(scanner.Text())
+	stmts, err := rubyStatements(data)
+	if err != nil {
+		return nil, err
+	}
+	for _, stmt := range stmts {
+		m := gemspecDepRe.FindStringSubmatch(stmt)
 		if m == nil || strings.Contains(m[1], "#{") {
 			continue
 		}
@@ -48,5 +49,5 @@ func (GemspecDeps) Extract(file File) ([]entry.Entry, error) {
 			Version: strings.Join(lits[1:], ", "),
 		})
 	}
-	return entries, scanner.Err()
+	return entries, nil
 }

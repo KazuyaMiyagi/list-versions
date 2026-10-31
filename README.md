@@ -167,7 +167,7 @@ With `--sort`, the column order and sort keys move together.
   It can't be analyzed statically.
 - Terraform `Lambda@Edge` detection only works within one module directory.
   Cross-module setups are unsupported.
-- In `*.gemspec`, only string literals on the same line are read.
+- In `*.gemspec`, only string literals are read.
   Constants and `#{}` interpolation are skipped.
 
 ## Release
