@@ -1,21 +1,27 @@
 # list-versions
 
-A "bird's-eye view for upgrade planning" version-declaration inventory CLI. It lists, in a single command, the areas Dependabot doesn't touch (language runtimes / IaC resources / CI tools / managed services / container images).
+A version-declaration inventory CLI that gives a bird's-eye view
+for upgrade planning.
+In a single command, it lists the areas Dependabot doesn't touch.
+Those are language runtimes, IaC resources, CI tools, cloud services
+and container images.
 
-This file is scoped to the **implementation conventions and procedures** for Claude (or a developer) working in this repo. Related docs:
+This file covers the implementation conventions and procedures.
+It is written for Claude, or a developer, working in this repo.
+Related docs:
 
 - User-facing description, usage, and known limitations → `README.md`
 - Rationale behind design decisions (the "why") → `docs/design.md`
 
 ## Architecture
 
-A Renovate-style **Manager × Entry** structure.
+The code follows a Renovate-style structure of Managers that produce Entries.
 
-```
+```text
 internal/
-├── entry/        Entry struct (Type / Path / Name / Version)
+├── entry/        Entry struct (Type, Path, Name, Version)
 ├── manager/      the various Managers (one Manager per file as a rule)
-└── output/       sort / table / csv / json
+└── output/       sort, table, csv, json
 cmd/list-versions/ main (CLI)
 ```
 
@@ -23,22 +29,36 @@ cmd/list-versions/ main (CLI)
 
 ```go
 type Entry struct {
-    Type    string  // "Python", "Lambda", "gem:rails", etc.
-    Path    string  // the file's directory (the raw walk result, not cwd-relative; only Clean'd)
-    Name    string  // the FILE column value (.python-version / Gemfile / Dockerfile / aws_lambda_function.api, etc.)
-    Version string  // the VERSION column value
+    // "Python", "Lambda", "gem:rails", etc.
+    Type string
+    // the file's directory: the raw walk result, only Clean'd
+    // (not made cwd-relative)
+    Path string
+    // the FILE column value, e.g. .python-version, Gemfile,
+    // Dockerfile or aws_lambda_function.api
+    Name string
+    // the VERSION column value
+    Version string
 }
 ```
 
-**Name is a pointer to "where the user should edit"; Version is "what is actually declared."** When one file has multiple FROMs (as in a Dockerfile), Name is fixed to `Dockerfile` and the `image:tag` goes into Version so the differences are still visible (the bash version used Name=image, but we prioritize consistency of the Entry model).
+Name points at where the user should edit, and Version is what is actually declared.
+A Dockerfile can have several FROM lines.
+Name then stays `Dockerfile`, and each `image:tag` goes into Version.
+That keeps the differences visible.
+The bash version put the image in Name instead.
+Here the consistency of the Entry model takes priority.
 
 ### Manager interface
 
 ```go
 type Manager interface {
     Name() string
-    Match(path string) bool                       // pure path predicate; the walk is shared, so no filesystem access
-    Extract(file File) ([]entry.Entry, error)      // pull Entries out of one matched file (use readBytes(file) for the contents)
+    // pure path predicate; the walk is shared, so no filesystem access
+    Match(path string) bool
+    // pull Entries out of one matched file
+    // (use readBytes(file) for the contents)
+    Extract(file File) ([]entry.Entry, error)
 }
 
 // Optional extension for managers that read a whole directory at once.
@@ -48,36 +68,58 @@ type DirScoped interface {
 }
 ```
 
-There is **one shared filesystem walk per root** (`scanRoot`). Every file is offered to each Manager's `Match`; a file claimed by several Managers is read from disk **once** and the bytes (`File.Data`) are handed to each. `Match` must be a pure predicate (no I/O). Managers that span multiple files (`Terraform`, `TerraformResources`) implement `DirScoped` / `GroupByDir() bool = true`: their matched `*.tf` files are collapsed to their parent directory and `Extract` is called once per dir with `File{Path: dir}` (Data nil). Use the `readBytes(file)` helper inside `Extract` so cached and standalone calls both work.
+There is one shared filesystem walk per root (`scanRoot`).
+Every file is offered to the `Match` of each Manager.
+A file that several Managers claim is read from disk only once.
+Its bytes (`File.Data`) are then handed to each of them.
+That is why `Match` must be a pure predicate with no I/O.
+
+Some Managers span multiple files, namely `Terraform` and `TerraformResources`.
+They implement `DirScoped` and return true from `GroupByDir`.
+Their matched `*.tf` files are collapsed into the parent directory.
+`Extract` is then called once per directory with `File{Path: dir}` and nil Data.
+Read file contents through the `readBytes(file)` helper inside `Extract`.
+It works both with the cached bytes and in a standalone call.
 
 ### Execution flow
 
-`ScanAll(roots, managers, excludes) → [][]Entry` (separated per root) → per root `filepath.Clean(Path)` → `output.SortEntries` → concat in root order → `--type` filter → `EntriesTable/CSV/JSON`.
+1. `ScanAll(roots, managers, excludes)` returns `[][]Entry`, one slice per root
+2. Each root's entries go through `filepath.Clean(Path)` and `output.SortEntries`
+3. The roots are concatenated in argument order
+4. The `--type` filter is applied
+5. `EntriesTable`, `EntriesCSV` or `EntriesJSON` writes the output
 
-The prune set is built fresh per `ScanAll` call from read-only defaults + `excludes` (no shared mutable global).
+Each `ScanAll` call builds a fresh prune set from the read-only defaults and `excludes`.
+There is no shared mutable global.
 
-Why preserve root order: the order of arguments passed via shell glob (`list-versions ~/src/*/`) carries meaning in the UI.
+Root order is preserved because it carries meaning in the UI.
+The roots usually come from a shell glob like `list-versions ~/src/*/`.
 
 ## TYPE naming conventions
 
-### Runtime / product names (capitalized)
+### Runtime and product names (capitalized)
 
 Use the official spelling:
 
-- `Python` / `Ruby` / `Node.js` / `Go` / `Java` / `Bun` / `Deno` / `Rust` / `PHP` / `Perl` / `Lua` / `Crystal` / `Elixir` / `Erlang` / `Scala` / `Swift`
-- `Bundler` / `RubyGems` / `Yarn` / `Poetry` / `Pipenv` / `OpenAPI Generator` / `Terraform` / `Helm Chart` / `GitHub Actions`
-- Follow lowercase when that's official: `npm` / `pnpm` / `sbt` / `uv` / `pip` (the latter as a deps prefix only)
+- Languages: `Python`/`Ruby`/`Node.js`/`Go`/`Java`/`Bun`/`Deno`/`Rust`/`PHP`
+- More languages: `Perl`/`Lua`/`Crystal`/`Elixir`/`Erlang`/`Scala`/`Swift`
+- Tools: `Bundler`/`RubyGems`/`Yarn`/`Poetry`/`Pipenv`/`OpenAPI Generator`
+- More tools: `Terraform`/`Helm Chart`/`GitHub Actions`
+- Lowercase where that is the official spelling: `npm`/`pnpm`/`sbt`/`uv`/`pip`
+  - `pip` appears only as a deps prefix
 
-### Managed services
+### Cloud services
 
-- AWS: `Lambda` / `Lambda@Edge` / `RDS` / `Aurora` / `ElastiCache (Redis)` / `ElastiCache (Memcached)` / `ElastiCache (Valkey)` / `OpenSearch` / `EKS` / `EKS Node Group` / `ECS` / `App Runner` / `AMI`
-- GCP: `Cloud Run` / `Cloud Functions` / `App Engine` / `Cloud SQL` / `Compute Image`
-- IaC: `Terraform` / `Terraform Provider` / `Terraform Module`
-- Containers: `Docker` / `Kubernetes`
+- AWS runtimes and databases: `Lambda`/`Lambda@Edge`/`RDS`/`Aurora`
+- AWS caches: `ElastiCache (Redis)`/`ElastiCache (Memcached)`/`ElastiCache (Valkey)`
+- Other AWS: `OpenSearch`/`EKS`/`EKS Node Group`/`ECS`/`App Runner`/`AMI`
+- GCP: `Cloud Run`/`Cloud Functions`/`App Engine`/`Cloud SQL`/`Compute Image`
+- IaC: `Terraform`/`Terraform Provider`/`Terraform Module`
+- Containers: `Docker`/`Kubernetes`
 
 ### Package types (under `--deps`, `<registry>:<name>` form, lowercase)
 
-```
+```text
 gem:rails           rubygems.org
 npm:react           npmjs.com  (shared by yarn/pnpm/bun)
 pip:django          PyPI
@@ -87,17 +129,23 @@ composer:laravel/framework  Packagist
 hex:phoenix         hex.pm
 ```
 
-The prefix is the **registry name**, not the language name (`gem:rails`, not `Ruby:rails`). Why: when one language has multiple package managers (Node.js → npm/yarn/pnpm/bun), this makes "which registry?" explicit, and it lets us keep a runtime's TYPE separate from its package manager's (as with Bundler).
+The prefix is the registry name, not the language name.
+So it is `gem:rails`, not `Ruby:rails`.
+One language can have several package managers, as Node.js has npm and Yarn.
+The registry prefix makes it explicit where a package comes from.
+It also keeps a runtime's TYPE apart from its package manager's TYPE.
+Ruby and Bundler are an example of that split.
 
 ## Columns and sorting
 
-Column order is **linked** to the order given in `--sort`:
+Column order is linked to the order given in `--sort`:
 
 - Default: `directory,file,type,version`
 - The table header is likewise `DIRECTORY | FILE | TYPE | VERSION`
 - The CSV header and the JSON object key order also reflect the given order
 
-Root (positional argument) order is preserved + sort-key order within each root.
+The order of the roots (positional arguments) is preserved.
+The sort keys apply within each root.
 
 ## Template for adding a Manager
 
@@ -105,49 +153,67 @@ To add a new Manager (e.g. `Foo`):
 
 1. Create `internal/manager/foo.go`
    - `type Foo struct{}`
-   - `Match(path string) bool` — a pure predicate on `filepath.Base(path)` (or path context, e.g. `underGithubWorkflows`)
-   - `Extract(file File) ([]entry.Entry, error)` — get the contents via `data, err := readBytes(file)`
-   - For a directory-spanning Manager, also add `GroupByDir() bool { return true }` and `Match` the relevant files (e.g. `*.tf`)
-2. Create `internal/manager/foo_test.go` — tests build fixed inputs with `t.TempDir()` + `writeFile`, and obtain results via the `matched(t, Foo{}, dir)` (claimed files) and `collect(t, Foo{}, dir)` (extracted entries, runs the real scanner) helpers
+   - `Match(path string) bool` is a pure predicate on `filepath.Base(path)`.
+     It can also use path context, as `underGithubWorkflows` does.
+   - `Extract(file File) ([]entry.Entry, error)` reads the contents
+     via `data, err := readBytes(file)`.
+   - A directory-spanning Manager also adds `GroupByDir() bool { return true }`.
+     Its `Match` then picks the relevant files, such as `*.tf`.
+2. Create `internal/manager/foo_test.go`
+   - Tests build fixed inputs with `t.TempDir()` and `writeFile`.
+   - `matched(t, Foo{}, dir)` returns the files the Manager claims.
+   - `collect(t, Foo{}, dir)` runs the real scanner and returns the entries.
 3. Add `manager.Foo{}` to the `managers` slice in `cmd/list-versions/main.go`
 4. If it's `--deps`-only, add it to the `depsFlag` branch
 5. Update the detection-target table in README
 
-The shared walk applies the prune set automatically (node_modules / .git / .terraform / vendor / .bundle; extendable per run via `--exclude`).
+The shared walk applies the prune set automatically.
+The defaults skip node_modules, .git, .terraform, vendor and .bundle.
+`--exclude` adds more directories for a single run.
 
-For the "why" behind design choices (why `--deps` is opt-in, why lockfiles are also read, the Lambda LTS-only policy, why there's no config file / cache, flag naming, etc.), see `docs/design.md`.
+For the "why" behind design choices, see `docs/design.md`.
+It explains why `--deps` is opt-in and why lockfiles are also read.
+It also covers the Lambda LTS-only policy and the flag naming.
+The reasons for having no configuration file or cache are there too.
 
 ## Testing policy
 
-Apply the **Red/Green/Refactor TDD** from the user's global CLAUDE.md by default. At least one unit test per Manager.
+Apply the Red/Green/Refactor TDD from the user's global CLAUDE.md by default.
+Write at least one unit test for every Manager.
 
-- Build hermetic fixtures with `t.TempDir()` (no dependency on real files)
-- helper: `writeFile(t, path, content)` (defined in `internal/manager/manager_test.go`)
-- Write the test for the desired behavior first → confirm it fails → implement → refactor
-- Verification against real repositories is supplementary (for regression detection); do not write tests that depend on any specific repository's internal structure
+- Build hermetic fixtures with `t.TempDir()`, with no dependency on real files
+- Use the `writeFile(t, path, content)` helper from `internal/manager/manager_test.go`
+- Write the test for the desired behavior first and confirm that it fails.
+  Then implement, and refactor afterwards.
+- Checking against real repositories is a supplement for catching regressions.
+  Do not write tests that depend on the internal structure of a specific repository.
 
 ## Development commands
 
 ```sh
 # during development
-gofmt -l .       # list unformatted files (CI fails if `gofmt -l .` produces any output)
-gofmt -w .       # apply formatting
+gofmt -l . # list unformatted files (CI fails on any output)
+gofmt -w . # apply formatting
 go vet ./...
 go test ./...
 go build -o /tmp/list-versions ./cmd/list-versions
 
 # cross-build (Windows sanity check)
-GOOS=windows GOARCH=amd64 go build -o /tmp/list-versions.exe ./cmd/list-versions
+GOOS=windows GOARCH=amd64 \
+    go build -o /tmp/list-versions.exe ./cmd/list-versions
 
 # with version embedded
-go build -ldflags "-X main.version=vX.Y.Z" -o /tmp/list-versions ./cmd/list-versions
+go build -ldflags "-X main.version=vX.Y.Z" \
+    -o /tmp/list-versions ./cmd/list-versions
 ```
 
 ## Release procedure
 
 1. `git tag vX.Y.Z`
 2. `git push origin vX.Y.Z`
-3. `.github/workflows/release.yml` triggers GoReleaser → posts the per-OS/arch binaries + checksums + changelog to the Release
-4. Confirm it's installable via `go install github.com/KazuyaMiyagi/list-versions/cmd/list-versions@vX.Y.Z`
+3. `.github/workflows/release.yml` triggers GoReleaser.
+   It posts the per-OS/arch binaries, checksums and changelog to the Release.
+4. Confirm that it installs with
+   `go install github.com/KazuyaMiyagi/list-versions/cmd/list-versions@vX.Y.Z`
 
 For known limitations, see the Limitations section in `README.md`.
