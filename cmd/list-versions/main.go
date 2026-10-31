@@ -27,15 +27,22 @@ If no PATH is given, the current directory is used. Multiple paths are
 supported (typically via shell glob, e.g. list-versions ~/src/*/).
 
 Detected sources:
-  .python-version, .ruby-version, .node-version, .terraform-version,
-  .go-version, .nvmrc, .tool-versions, package.json (engines.node),
-  Gemfile (ruby), pyproject.toml (requires-python / Poetry python),
-  Dockerfile (FROM image:tag), Terraform (required_version,
-  required_providers, module_calls, plus AWS resource runtime/engine
-  versions on Lambda / RDS / Aurora / ElastiCache / OpenSearch / EKS),
-  GitHub Actions workflows (uses: foo/bar@vN, with: *-version),
-  Kubernetes manifests (container images on Pod / Deployment /
-  StatefulSet / DaemonSet / ReplicaSet / Job / CronJob).
+  Runtimes and package managers:
+    .X-version files (.python-version, .ruby-version, .node-version, ...),
+    .nvmrc, .tool-versions, package.json (engines, packageManager),
+    Gemfile / gems.rb / *.gemfile (ruby), Gemfile.lock / gems.locked /
+    *.gemfile.lock (BUNDLED WITH), *.gemspec (required_ruby_version,
+    required_rubygems_version), pyproject.toml (requires-python,
+    requires-poetry, tool.uv required-version), uv.toml, poetry.lock
+  Containers:
+    Dockerfile (FROM image:tag), Kubernetes manifests (container images),
+    Helm Chart.yaml and values.yaml (image.tag)
+  Infrastructure:
+    Terraform (required_version, required_providers, module versions,
+    AWS / GCP resource runtime and engine versions), CloudFormation
+    templates, serverless.yml (runtime)
+  CI:
+    GitHub Actions workflows (uses: foo/bar@vN, with: *-version)
 
 Options:
   -f, --format FORMAT   output format: table (default), csv, json
@@ -48,11 +55,13 @@ Options:
                         --type 'gem:rails*,npm:@types/*'
   -x, --exclude DIRS    extra directory basenames to skip during the walk
                         (comma-separated, e.g. --exclude .venv,tmp)
-  -d, --deps            include application-level direct dependencies from
-                        Gemfile / Gemfile.lock / package.json /
-                        package-lock.json / yarn.lock / pnpm-lock.yaml /
-                        pyproject.toml / poetry.lock / requirements.txt /
-                        Cargo.toml / Cargo.lock / go.mod
+  -d, --deps            also list application dependencies from manifests
+                        and lockfiles: Ruby (Gemfile, *.gemspec,
+                        Gemfile.lock), npm (package.json, package-lock.json,
+                        yarn.lock, pnpm-lock.yaml, bun.lock), Python
+                        (pyproject.toml, Pipfile, requirements.txt,
+                        poetry.lock, Pipfile.lock, uv.lock), Rust, Go, PHP
+                        (Composer) and Elixir (Mix)
   -v, --version         print the binary version and exit
   -h, --help            show this message
 `

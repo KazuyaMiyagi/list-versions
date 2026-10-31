@@ -58,8 +58,8 @@ list-versions --exclude .venv,tmp
 - `.nvmrc`/`.tool-versions` (asdf/mise)
 - `package.json` `engines.{node,npm,pnpm,yarn,bun}`
   and `packageManager` (corepack)
-- the `ruby "..."` directive in `Gemfile`
-- `BUNDLED WITH` in `Gemfile.lock` (Bundler)
+- the `ruby "..."` directive in `Gemfile`/`gems.rb`/`*.gemfile` (Appraisal)
+- `BUNDLED WITH` in `Gemfile.lock`/`gems.locked`/`*.gemfile.lock` (Bundler)
 - `required_ruby_version` and `required_rubygems_version` (RubyGems)
   in `*.gemspec`
 - `requires-python`/Poetry's `python` in `pyproject.toml`
@@ -127,7 +127,7 @@ list-versions --exclude .venv,tmp
 
 | Ecosystem | Manifest                                                        | Lockfile                                                    |
 | --------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Ruby      | `Gemfile`/`*.gemspec`                                           | `Gemfile.lock`                                              |
+| Ruby      | `Gemfile`/`gems.rb`/`*.gemfile`/`*.gemspec`                     | `Gemfile.lock`/`gems.locked`/`*.gemfile.lock`               |
 | npm       | `package.json` (deps, devDeps)                                  | `package-lock.json`/`yarn.lock`/`pnpm-lock.yaml`/`bun.lock` |
 | Python    | `pyproject.toml` (PEP 621, Poetry)/`Pipfile`/`requirements.txt` | `poetry.lock`/`Pipfile.lock`/`uv.lock`                      |
 | Rust      | `Cargo.toml`                                                    | `Cargo.lock`                                                |
@@ -167,7 +167,7 @@ With `--sort`, the column order and sort keys move together.
   It can't be analyzed statically.
 - Terraform `Lambda@Edge` detection only works within one module directory.
   Cross-module setups are unsupported.
-- In `*.gemspec`, only string literals on the same line are read.
+- In `*.gemspec`, only string literals are read.
   Constants and `#{}` interpolation are skipped.
 
 ## Release

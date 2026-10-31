@@ -23,7 +23,7 @@ type GemfileDeps struct{}
 
 func (GemfileDeps) Name() string { return "gemfile-deps" }
 
-func (GemfileDeps) Match(path string) bool { return filepath.Base(path) == "Gemfile" }
+func (GemfileDeps) Match(path string) bool { return isGemfile(path) }
 
 func (GemfileDeps) Extract(file File) ([]entry.Entry, error) {
 	data, err := readBytes(file)
@@ -45,7 +45,7 @@ func (GemfileDeps) Extract(file File) ([]entry.Entry, error) {
 		entries = append(entries, entry.Entry{
 			Type:    "gem:" + m[1],
 			Path:    dir,
-			Name:    "Gemfile",
+			Name:    filepath.Base(file.Path),
 			Version: m[2],
 		})
 	}
@@ -59,7 +59,7 @@ type GemfileLockDeps struct{}
 
 func (GemfileLockDeps) Name() string { return "gemfile-lock-deps" }
 
-func (GemfileLockDeps) Match(path string) bool { return filepath.Base(path) == "Gemfile.lock" }
+func (GemfileLockDeps) Match(path string) bool { return isGemfileLock(path) }
 
 // gemSpecRe matches `    gem-name (1.2.3)` indented under `specs:` in
 // Gemfile.lock. Anything else (sub-dependencies, RUBY VERSION, BUNDLED WITH)
@@ -98,7 +98,7 @@ func (GemfileLockDeps) Extract(file File) ([]entry.Entry, error) {
 		entries = append(entries, entry.Entry{
 			Type:    "gem:" + m[1],
 			Path:    dir,
-			Name:    "Gemfile.lock",
+			Name:    filepath.Base(file.Path),
 			Version: m[2],
 		})
 	}

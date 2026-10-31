@@ -10,8 +10,8 @@ import (
 	"github.com/KazuyaMiyagi/list-versions/internal/entry"
 )
 
-// The right-hand side is not evaluated as Ruby: every string literal on it is
-// taken as one requirement, which covers the plain string, array and
+// The right-hand side is not evaluated as Ruby: every string literal in the
+// statement is taken as one requirement, which covers the plain string, array and
 // Gem::Requirement.new forms. Constant references and `#{}` interpolation
 // would need evaluation, so they are skipped rather than shown half-resolved.
 var (
@@ -39,9 +39,12 @@ func (Gemspec) Extract(file File) ([]entry.Entry, error) {
 	}
 	var entries []entry.Entry
 	seen := map[string]bool{}
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	for scanner.Scan() {
-		m := gemspecRequirementRe.FindStringSubmatch(scanner.Text())
+	stmts, err := rubyStatements(data)
+	if err != nil {
+		return nil, err
+	}
+	for _, stmt := range stmts {
+		m := gemspecRequirementRe.FindStringSubmatch(stmt)
 		if m == nil || seen[m[1]] {
 			continue
 		}
@@ -63,7 +66,7 @@ func (Gemspec) Extract(file File) ([]entry.Entry, error) {
 			Version: version,
 		})
 	}
-	return entries, scanner.Err()
+	return entries, nil
 }
 
 func rubyStringLiterals(s string) []string {
@@ -72,4 +75,37 @@ func rubyStringLiterals(s string) []string {
 		lits = append(lits, m[1]+m[2]+m[3])
 	}
 	return lits
+}
+
+// rubyStatements splits Ruby source into lines, joining a line that ends with
+// `,`, `(` or `[` with the next one, so an argument list or array that spans
+// several lines is read as a single statement.
+func rubyStatements(data []byte) ([]string, error) {
+	var stmts []string
+	var cur strings.Builder
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if cur.Len() > 0 {
+			cur.WriteByte(' ')
+		}
+		cur.WriteString(line)
+		if continuesOnNextLine(line) {
+			continue
+		}
+		stmts = append(stmts, cur.String())
+		cur.Reset()
+	}
+	if cur.Len() > 0 {
+		stmts = append(stmts, cur.String())
+	}
+	return stmts, scanner.Err()
+}
+
+func continuesOnNextLine(line string) bool {
+	t := strings.TrimSpace(line)
+	if strings.HasPrefix(t, "#") {
+		return false
+	}
+	return strings.HasSuffix(t, ",") || strings.HasSuffix(t, "(") || strings.HasSuffix(t, "[")
 }
