@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/KazuyaMiyagi/list-versions/internal/entry"
 )
@@ -42,18 +43,23 @@ func (Gemfile) Extract(file File) ([]entry.Entry, error) {
 	return nil, scanner.Err()
 }
 
+// isGemfile also accepts `*.gemfile`, the naming Appraisal uses for the
+// per-variant Gemfiles under gemfiles/. The directory is not required, since
+// BUNDLE_GEMFILE can point at such a file anywhere.
 func isGemfile(path string) bool {
-	switch filepath.Base(path) {
+	switch base := filepath.Base(path); base {
 	case "Gemfile", "gems.rb":
 		return true
+	default:
+		return strings.HasSuffix(base, ".gemfile")
 	}
-	return false
 }
 
 func isGemfileLock(path string) bool {
-	switch filepath.Base(path) {
+	switch base := filepath.Base(path); base {
 	case "Gemfile.lock", "gems.locked":
 		return true
+	default:
+		return strings.HasSuffix(base, ".gemfile.lock")
 	}
-	return false
 }

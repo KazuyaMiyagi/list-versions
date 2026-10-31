@@ -46,6 +46,10 @@ func TestIsGemfile(t *testing.T) {
 		{"app/Gemfile.lock", false, true},
 		{"app/gems.rb", true, false},
 		{"app/gems.locked", false, true},
+		{"app/gemfiles/rails_7_1.gemfile", true, false},
+		{"app/gemfiles/rails_7_1.gemfile.lock", false, true},
+		{"app/Gemfile.local", false, false},
+		{"app/gemfile.rb", false, false},
 	}
 	for _, c := range cases {
 		t.Run(c.path, func(t *testing.T) {
