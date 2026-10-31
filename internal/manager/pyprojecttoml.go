@@ -10,7 +10,8 @@ import (
 
 // PyprojectToml reads the Python version constraint from pyproject.toml,
 // preferring PEP 621 `requires-python` and falling back to Poetry's `python`
-// dependency.
+// dependency. It also reads the package manager requirements
+// `[tool.poetry] requires-poetry` and `[tool.uv] required-version`.
 type PyprojectToml struct{}
 
 func (PyprojectToml) Name() string { return "pyproject-toml" }
@@ -23,8 +24,12 @@ type pyprojectDoc struct {
 	} `toml:"project"`
 	Tool struct {
 		Poetry struct {
-			Dependencies map[string]toml.Primitive `toml:"dependencies"`
+			RequiresPoetry string                    `toml:"requires-poetry"`
+			Dependencies   map[string]toml.Primitive `toml:"dependencies"`
 		} `toml:"poetry"`
+		Uv struct {
+			RequiredVersion string `toml:"required-version"`
+		} `toml:"uv"`
 	} `toml:"tool"`
 }
 
@@ -53,13 +58,16 @@ func (PyprojectToml) Extract(file File) ([]entry.Entry, error) {
 			}
 		}
 	}
-	if ver == "" {
-		return nil, nil
+	dir := filepath.Dir(file.Path)
+	var entries []entry.Entry
+	if ver != "" {
+		entries = append(entries, entry.Entry{Type: "Python", Path: dir, Name: "pyproject.toml", Version: ver})
 	}
-	return []entry.Entry{{
-		Type:    "Python",
-		Path:    filepath.Dir(file.Path),
-		Name:    "pyproject.toml",
-		Version: ver,
-	}}, nil
+	if v := doc.Tool.Poetry.RequiresPoetry; v != "" {
+		entries = append(entries, entry.Entry{Type: "Poetry", Path: dir, Name: "pyproject.toml", Version: v})
+	}
+	if v := doc.Tool.Uv.RequiredVersion; v != "" {
+		entries = append(entries, entry.Entry{Type: "uv", Path: dir, Name: "pyproject.toml", Version: v})
+	}
+	return entries, nil
 }
