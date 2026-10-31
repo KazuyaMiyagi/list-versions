@@ -3,8 +3,8 @@
 A version-declaration inventory CLI for getting
 a "bird's-eye view when planning upgrades."
 
-It lists the areas Dependabot doesn't touch in a single command.
-These are language runtimes, IaC resources, CI tools and managed cloud services.
+In a single command, it lists the areas that Dependabot doesn't touch.
+Those are language runtimes, IaC resources, CI tools and managed cloud services.
 Application-level direct dependencies are also supported,
 opt-in via `--deps`.
 
@@ -72,7 +72,7 @@ list-versions --exclude .venv,tmp
 
 - `FROM image:tag[@sha256:...]` in `Dockerfile`/`Dockerfile.*`
   (`ARG NAME=default` is also resolved)
-- Kubernetes manifests: container and initContainer images on
+- container and initContainer images in Kubernetes manifests of these kinds:
   - `Pod`/`Deployment`/`StatefulSet`/`DaemonSet`
   - `ReplicaSet`/`Job`/`CronJob`
 - Helm Chart `Chart.yaml` (`version`/`appVersion`)
@@ -105,9 +105,10 @@ list-versions --exclude .venv,tmp
 
 ### CloudFormation
 
-- version properties in YAML or JSON templates:
-  - `Resources.*.Properties.{Runtime, EngineVersion, Version, ReleaseVersion, ...}`
-  - Lambda/SAM/RDS/Aurora/ElastiCache/OpenSearch/EKS
+- version properties under `Resources.*.Properties`,
+  such as `Runtime` and `EngineVersion`
+- templates in either YAML or JSON
+- resource types: Lambda/SAM/RDS/Aurora/ElastiCache/OpenSearch/EKS
 
 ### Serverless Framework
 
@@ -159,12 +160,12 @@ With `--sort`, the column order and sort keys move together.
 - Bun's binary lockfile (`bun.lockb`) is unsupported.
   Only `bun.lock` (text) is supported.
 - CloudFormation short-form intrinsics (`!Ref X`, etc.) leak through as values.
-  yaml.v3 discards their tag information.
+  This happens because yaml.v3 discards the tag information.
   The long form `Ref: X` is skipped correctly.
 - Helm `values.yaml` is only read for a simple top-level `image.tag`.
   Sub-charts and multiple images are unsupported.
-- Env set via `$GITHUB_ENV` (`echo X=Y >> $GITHUB_ENV`) is left as an expression.
-  It can't be analyzed statically.
+- Env set at run time via `$GITHUB_ENV` can't be analyzed statically.
+  A reference to such a variable is left as an expression.
 - Terraform `Lambda@Edge` detection only works within one module directory.
   Cross-module setups are unsupported.
 - In `*.gemspec`, only string literals on the same line are read.
